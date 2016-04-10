@@ -7,13 +7,11 @@ case class ApiError(ok: Boolean, error: String)
 
 case class ApiHeartbeatResponse(ok: Boolean, error: String)
 
-case class OrderBook(venue: String, stock: String)
+case class OrderBookResponse(ok: Boolean, venue: String, symbol: String, bids: Option[List[Bid]], asks: Option[List[Ask]], ts: String)
 
-case class OrderBookResponse(ok: Boolean, venue: String, symbol: String, bids: List[Bid], asks: List[Ask], ts: String)
+case class Bid(price: Int, qty: Int, isBuy: Boolean)
 
-case class Bid(price: Int, qty: Int, isBusy: Boolean)
-
-case class Ask(price: Int, qty: Int, isBusy: Boolean)
+case class Ask(price: Int, qty: Int, isBuy: Boolean)
 
 case class Order(account: String, venue: String, stock: String, price: Int, qty: Int, direction: String, orderType: String)
 
@@ -26,7 +24,6 @@ object JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
   implicit val apiErrorFormat = jsonFormat2(ApiError)
   implicit val HeartbeatApiFormat = jsonFormat2(ApiHeartbeatResponse)
 
-  implicit val OrderBookFormat = jsonFormat2(OrderBook)
   implicit val BidFormat = jsonFormat3(Bid)
   implicit val AskFormat = jsonFormat3(Ask)
   implicit val OrderBookResponseFormat = jsonFormat6(OrderBookResponse)

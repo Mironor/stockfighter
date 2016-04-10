@@ -21,13 +21,12 @@ class InformationActorSpec extends TestKit(ActorSystem()) with ImplicitSender wi
       // Given
       val parent = TestProbe()
       val actor = TestActorRef[InformationActor](Props(new InformationActor(successfulApiMock)), parent.ref)
-      val orderBook = OrderBook(venue, stock)
 
       // When
-      parent.send(actor, FetchOrderBook(orderBook))
+      parent.send(actor, FetchOrderBook(venue, stock))
 
       // Then
-      parent.expectMsg(OrderBookOk(OrderBookResponse(true, venue, stock, Nil, Nil, "")))
+      parent.expectMsg(OrderBookOk(OrderBookResponse(true, venue, stock, None, None, "")))
       success
     }
 
@@ -35,10 +34,9 @@ class InformationActorSpec extends TestKit(ActorSystem()) with ImplicitSender wi
       // Given
       val parent = TestProbe()
       val actor = TestActorRef[InformationActor](Props(new InformationActor(unsuccessfulApiMock)), parent.ref)
-      val orderBook = OrderBook(venue, stock)
 
       // When
-      parent.send(actor, FetchOrderBook(orderBook))
+      parent.send(actor, FetchOrderBook(venue, stock))
 
       // Then
       parent.expectMsg(OrderBookNok(true, ""))

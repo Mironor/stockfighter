@@ -17,7 +17,7 @@ import scala.concurrent.Future
 trait Api {
   def checkApi()(implicit actorSystem: ActorSystem, materializer: Materializer): Future[Either[ApiError, ApiHeartbeatResponse]]
 
-  def sendOrderBook(orderBook: OrderBook)(implicit actorSystem: ActorSystem, materializer: Materializer): Future[Either[ApiError, OrderBookResponse]]
+  def sendOrderBook(venue: String, stock: String)(implicit actorSystem: ActorSystem, materializer: Materializer): Future[Either[ApiError, OrderBookResponse]]
 
   def sendOrder(order: Order)(implicit actorSystem: ActorSystem, materializer: Materializer): Future[Either[ApiError, OrderResponse]]
 }
@@ -66,16 +66,24 @@ class RestApi extends Api {
       case HttpResponse(StatusCodes.NotFound, _, _, _) => throw new ApiException(s"Api url $url does not exist")
       case HttpResponse(statusCode, _, _, _) => throw new ApiException(s"Unhandled status code $statusCode for url $url")
     }).recover {
-      case DeserializationException(msg, cause, fieldNames) => throw new ApiException(s"Deserialization Exception: url: $url; msg: $msg; fields: $fieldNames")
+      case DeserializationException(msg, cause, fieldNames) => throw new ApiException(s"Deserialization Exception: url: $url; msg: $msg; fields: $fieldNames; entity: ${httpResponse.entity}")
       case default => throw new ApiException(s"Default exception case: url: $url, exception: $default")
     }
 
-  override def sendOrderBook(orderBook: OrderBook)(implicit actorSystem: ActorSystem, materializer: Materializer): Future[Either[ApiError, OrderBookResponse]] = {
-    val url = s"$base_url/venues/${orderBook.venue}/stocks/${orderBook.stock}"
+  /**
+    * Requests order book for a venue/stock
+    *
+    * @param venue requested venue
+    * @param stock requested stock
+    * @param actorSystem  implicit actor system of the entity calling the method
+    * @param materializer implicit actor materializer of the entity calling the method
+    * @return Future[ Either[ApiError, OrderBookResponse] ] parser reply from the server wrapped in a Future
+    */
+  override def sendOrderBook(venue: String, stock: String)(implicit actorSystem: ActorSystem, materializer: Materializer): Future[Either[ApiError, OrderBookResponse]] = {
+    val url = s"$base_url/venues/$venue/stocks/$stock"
+    val request = HttpRequest(HttpMethods.GET, url, defaultHeaders)
 
     for {
-      orderBookJson <- Marshal(orderBook.toJson).to[RequestEntity]
-      request = HttpRequest(HttpMethods.POST, url, defaultHeaders, orderBookJson)
       httpResponse <- Http(actorSystem).singleRequest(request)
       response <- handleResponse[OrderBookResponse](url, httpResponse)
     } yield response

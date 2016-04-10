@@ -10,7 +10,8 @@ class UnsuccessfulApiMock extends Api{
 
   override def checkApi()(implicit actorSystem: ActorSystem, materializer: Materializer) = defaultResponse
 
+  override def sendOrderBook(venue: String, stock: String)(implicit actorSystem: ActorSystem, materializer: Materializer) = defaultResponse
+
   override def sendOrder(order: Order)(implicit actorSystem: ActorSystem, materializer: Materializer) = defaultResponse
 
-  override def sendOrderBook(orderBook: OrderBook)(implicit actorSystem: ActorSystem, materializer: Materializer) = defaultResponse
 }

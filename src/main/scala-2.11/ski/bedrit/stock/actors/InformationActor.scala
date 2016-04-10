@@ -3,10 +3,10 @@ package ski.bedrit.stock.actors
 import akka.actor.{Actor, ActorLogging}
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
 import ski.bedrit.stock.actors.InformationActor.{FetchOrderBook, FetchOrderBookResponse, OrderBookNok, OrderBookOk}
-import ski.bedrit.stock.api.{Api, ApiError, OrderBook, OrderBookResponse}
+import ski.bedrit.stock.api._
 
 object InformationActor{
-  case class FetchOrderBook(orderBook: OrderBook)
+  case class FetchOrderBook(venue: String, stock: String)
 
   case class FetchOrderBookResponse(response: Either[ApiError, OrderBookResponse])
 
@@ -24,7 +24,11 @@ class InformationActor(val api: Api) extends Actor with ActorLogging {
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system))
 
   override def receive = {
-    case FetchOrderBook(orderBook) => api.sendOrderBook(orderBook).map(FetchOrderBookResponse.apply).pipeTo(self)
+    case FetchOrderBook(venue, stock) =>
+      log.info(s"Going to fetch $venue: $stock")
+      api.sendOrderBook(venue, stock).map(FetchOrderBookResponse.apply).pipeTo(self).recover{
+        case ApiException(msg) => log.error(msg)
+      }
 
     case FetchOrderBookResponse(Right(orderBookResponse)) =>
       log.info(s"Received orderbook response: $orderBookResponse")
