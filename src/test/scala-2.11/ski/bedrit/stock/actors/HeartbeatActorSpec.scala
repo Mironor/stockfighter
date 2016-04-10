@@ -34,7 +34,7 @@ class HeartbeatActorSpec extends TestKit(ActorSystem()) with ImplicitSender with
       parent.send(actor, CheckApi)
 
       // Then
-      parent.expectMsg(ApiNok(500, true, ""))
+      parent.expectMsg(ApiNok(true, ""))
       success
     }
   }

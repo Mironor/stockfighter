@@ -1,18 +1,19 @@
 package ski.bedrit.stock.actors
 
 import akka.actor.{Actor, ActorLogging}
-import akka.http.scaladsl.model._
 import akka.stream.{ActorMaterializer, ActorMaterializerSettings}
-import ski.bedrit.stock.actors.BiddingActor.{SendOrder, SendOrderResponse}
-import ski.bedrit.stock.api.{Api, Order, OrderResponse}
+import ski.bedrit.stock.actors.BiddingActor.{SendOrder, SendOrderNok, SendOrderOk, SendOrderResponse}
+import ski.bedrit.stock.api.{Api, ApiError, Order, OrderResponse}
 
 object BiddingActor {
 
   case class SendOrder(order: Order)
 
-  case class SendOrderResponse(response: (StatusCode, Seq[HttpHeader], OrderResponse))
+  case class SendOrderResponse(response: Either[ApiError, OrderResponse])
 
-  case class OrderOk(order: Order)
+  case class SendOrderOk(orderResponse: OrderResponse)
+
+  case class SendOrderNok(ok: Boolean, error: String)
 
 }
 
@@ -25,20 +26,11 @@ class BiddingActor(val api: Api) extends Actor with ActorLogging {
   implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system))
 
   def receive = {
-    case SendOrder(order) => api.sendOrder(order).map(SendOrderResponse.apply).pipeTo(self).recover{
-      case x => println(x)
-    }
+    case SendOrder(order) => api.sendOrder(order).map(SendOrderResponse.apply).pipeTo(self)
 
-    case SendOrderResponse((statusCode, _, response)) =>
-      log.info(s"Got response! Code $statusCode")
-      log.info(s"Content: $response")
-      context.system.terminate()
+    case SendOrderResponse(Right(response)) => context.parent ! SendOrderOk(response)
 
-    case HttpResponse(code, _, entity, _) =>
-      log.info("Request failed!")
-      log.info("Response code: " + code)
-      log.info("Content" + entity)
-      context.system.terminate()
+    case SendOrderResponse(Left(ApiError(ok, error))) => context.parent ! SendOrderNok(ok, error)
   }
 }
 

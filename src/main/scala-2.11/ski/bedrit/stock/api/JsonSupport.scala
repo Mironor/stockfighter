@@ -3,7 +3,11 @@ package ski.bedrit.stock.api
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import spray.json.DefaultJsonProtocol
 
-case class ApiResponse(ok: Boolean, error: String)
+sealed trait ApiResponse
+
+case class ApiError(ok: Boolean, error: String)
+
+case class ApiHeartbeatResponse(ok: Boolean, error: String) extends ApiResponse
 
 case class Order(account: String, venue: String, symbol: String, price: Int, qty: Int, direction: String, orderType: String)
 
@@ -20,12 +24,13 @@ case class OrderResponse(ok: Boolean,
                          ts: String,
                          fills: List[Fill],
                          totalFilled: Int,
-                         open: Boolean)
+                         open: Boolean) extends ApiResponse
 
 case class Fill(price: Int, qty: Int, ts: String)
 
 object JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
-  implicit val checkApiResponseFormat = jsonFormat2(ApiResponse)
+  implicit val apiErrorFormat = jsonFormat2(ApiError)
+  implicit val HeartbeatApiFormat = jsonFormat2(ApiHeartbeatResponse)
   implicit val OrderFormat = jsonFormat7(Order)
   implicit val FillFormat = jsonFormat3(Fill)
   implicit val OrderResponseFormat = jsonFormat14(OrderResponse)
