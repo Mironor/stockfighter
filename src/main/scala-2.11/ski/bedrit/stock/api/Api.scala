@@ -17,6 +17,8 @@ import scala.concurrent.Future
 trait Api {
   def checkApi()(implicit actorSystem: ActorSystem, materializer: Materializer): Future[Either[ApiError, ApiHeartbeatResponse]]
 
+  def sendOrderBook(orderBook: OrderBook)(implicit actorSystem: ActorSystem, materializer: Materializer): Future[Either[ApiError, OrderBookResponse]]
+
   def sendOrder(order: Order)(implicit actorSystem: ActorSystem, materializer: Materializer): Future[Either[ApiError, OrderResponse]]
 }
 
@@ -68,6 +70,17 @@ class RestApi extends Api {
       case default => throw new ApiException(s"Default exception case: url: $url, exception: $default")
     }
 
+  override def sendOrderBook(orderBook: OrderBook)(implicit actorSystem: ActorSystem, materializer: Materializer): Future[Either[ApiError, OrderBookResponse]] = {
+    val url = s"$base_url/venues/${orderBook.venue}/stocks/${orderBook.stock}"
+
+    for {
+      orderBookJson <- Marshal(orderBook.toJson).to[RequestEntity]
+      request = HttpRequest(HttpMethods.POST, url, defaultHeaders, orderBookJson)
+      httpResponse <- Http(actorSystem).singleRequest(request)
+      response <- handleResponse[OrderBookResponse](url, httpResponse)
+    } yield response
+  }
+
   /**
     * Sends order to the stock market
     *
@@ -77,7 +90,7 @@ class RestApi extends Api {
     * @return Future[ Either[ApiError, OrderResponse] ] parser reply from the server wrapped in a Future
     */
   override def sendOrder(order: Order)(implicit actorSystem: ActorSystem, materializer: Materializer): Future[Either[ApiError, OrderResponse]] = {
-    val url = s"$base_url/venues/${order.venue}/stocks/${order.symbol}/orders"
+    val url = s"$base_url/venues/${order.venue}/stocks/${order.stock}/orders"
 
     for {
       orderJson <- Marshal(order.toJson).to[RequestEntity]

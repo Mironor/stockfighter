@@ -32,7 +32,7 @@ class BiddingActorSpec extends TestKit(ActorSystem()) with ImplicitSender with S
 
       // Then
       parent.expectMsg(SendOrderOk(
-        OrderResponse(true, order.symbol, order.venue, order.direction, 1000, 1000 - order.qty, order.price,
+        OrderResponse(true, order.stock, order.venue, order.direction, 1000, 1000 - order.qty, order.price,
           order.orderType, 0, order.account, "", List(Fill(5909, order.qty, "")), order.qty, false))
       )
       success

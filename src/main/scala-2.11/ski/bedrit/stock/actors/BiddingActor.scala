@@ -17,6 +17,13 @@ object BiddingActor {
 
 }
 
+/**
+  * Actor responsible for api:
+  * Creating new order
+  * Deleting existing order
+  *
+  * @param api service making api calls
+  */
 class BiddingActor(val api: Api) extends Actor with ActorLogging {
 
   import akka.pattern.pipe
@@ -28,9 +35,13 @@ class BiddingActor(val api: Api) extends Actor with ActorLogging {
   def receive = {
     case SendOrder(order) => api.sendOrder(order).map(SendOrderResponse.apply).pipeTo(self)
 
-    case SendOrderResponse(Right(response)) => context.parent ! SendOrderOk(response)
+    case SendOrderResponse(Right(response)) =>
+      log.info(s"Received response from Order: $response")
+      context.parent ! SendOrderOk(response)
 
-    case SendOrderResponse(Left(ApiError(ok, error))) => context.parent ! SendOrderNok(ok, error)
+    case SendOrderResponse(Left(ApiError(ok, error))) =>
+      log.info(s"Received ERROR from Order: $error")
+      context.parent ! SendOrderNok(ok, error)
   }
 }
 
